@@ -26,22 +26,77 @@ from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import GaussianNB
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
+import numpy as np
+import seaborn as sns
+from PIL import Image
+from sklearn.metrics import confusion_matrix
 
 #%%
 
 # read dataset1 csv file
 
-data_tweet = pd.read_csv("/Users/djoum/Documents/TBS Project/gitProject/AI-and-Big-Data-project/Dataset1_labeled_data.csv", sep = ",")
+data_tweet = pd.read_csv("/Users/ching/Desktop/Class/Data Project Management/AI and Big Data Project/Class 1/Dataset1_labeled_data.csv", sep = ",")
 
-data_tweet.head()
+#data_tweet.head()
 
 # summary of the dataset
 
-data_tweet.info()
+#data_tweet.info()
 
 #%%
 
-# 
+"""
+# plot the graph of number of tweets of each class
+
+count_class = pd.DataFrame({'class_0': [np.sum(data_tweet['class'] == 0)], 'class_1': [np.sum(data_tweet['class'] == 1)],\
+     'class_2': [np.sum(data_tweet['class'] == 2)]})
+
+x, y = count_class.columns, count_class.iloc[0]
+plt.bar(x, y, width = 0.3, color = 'green')
+plt.title('Number of Tweets of Each Class')
+plt.ylabel('Number of Tweets')
+plt.show()
+
+# number of words
+
+df1 = pd.DataFrame()
+
+df1['number_of_words'] = data_tweet['tweet'].apply(lambda x: len(str(x).split(" ")))
+df2 = pd.concat([data_tweet['tweet'], data_tweet['class'], df1], axis = 1)
+
+# number of characters
+
+df2['number_of_characters'] = data_tweet['tweet'].str.len()
+df2
+
+# average word length
+
+def avg_word_len(tweet):
+    words = tweet.split()
+    return (sum(len(word) for word in words)/len(words))
+
+df2['average_word_length'] = data_tweet['tweet'].apply(lambda x: avg_word_len(x))
+df2
+
+# visualize the number of words
+
+graph1 = sns.FacetGrid(df2, col = 'class')
+graph1.map(plt.hist, 'number_of_words', bins = 30)
+
+# visualize the number of characters
+
+graph1 = sns.FacetGrid(df2, col = 'class')
+graph1.map(plt.hist, 'number_of_characters', bins = 50)
+
+# visualize the average word length
+
+graph2 = sns.FacetGrid(df2, col = 'class')
+graph2.map(plt.hist, 'average_word_length', bins = 40)
+"""
+
+#%%
+
+# # define a function to clean data and make it suitable for modelling
 
 def clean_data(dataset):
     
@@ -109,13 +164,19 @@ data_tweet['clean_tweets'] = clean_data(data_tweet['tweet'])
 # most frequent words
 
 freq = pd.Series(' '.join(data_tweet['clean_tweets']).split()).value_counts()[:10]
-freq
+plt.bar(freq.index, freq, color = 'green')
+plt.xlabel('Words')
+plt.ylabel('Frequency')
+plt.title('Most Frequent Words')
+plt.show()
 
 # visualize most frequent words in all tweets
 
+mask = np.array(Image.open('/Users/ching/Desktop/Class/Data Project Management/AI and Big Data Project/Project/heart.png'))
+
 all_words = ' '.join([text for text in data_tweet['clean_tweets'] ])
-wordcloud = WordCloud(width = 800, height = 500).generate(all_words)
-plt.figure(figsize = (10, 7))
+wordcloud = WordCloud(width = 800, height = 800, background_color = "white", mask = mask).generate(all_words)
+plt.figure(figsize = (10, 10))
 plt.imshow(wordcloud, interpolation = "bilinear")
 plt.axis('off')
 plt.show()
@@ -143,16 +204,16 @@ x_train_tfidf, x_test_tfidf, y_train, y_test = train_test_split(X, y, test_size 
 # Logistic Regression 
 
 model_lr = LogisticRegression(C = 2, max_iter = 100).fit(x_train_tfidf, y_train)
-y_pred = model_lr.predict(x_test_tfidf)
-report_lr = classification_report(y_test, y_pred)
+y_pred_lr = model_lr.predict(x_test_tfidf)
+report_lr = classification_report(y_test, y_pred_lr)
 
+"""
 print(report_lr)
-acc_lr = accuracy_score(y_test, y_pred)
+acc_lr = accuracy_score(y_test, y_pred_lr)
 label_lr = "Logistic Regression"
 print(label_lr)
 print('Accuracy: ', acc_lr)
 
-"""
 # Decision Tree
 
 model_dt = tree.DecisionTreeClassifier().fit(x_train_tfidf, y_train)
@@ -214,6 +275,8 @@ label_nb = 'Naive Bayes'
 print(label_nb)
 print('Accuracy: ', acc_nb)
 
+#%%
+
 # summary of modelling results
 
 d0 = pd.DataFrame([label_lr, label_dt, label_knn, label_rf, label_svm, label_nb])
@@ -224,6 +287,30 @@ d2 = d2.sort_values(by = ['Accuracy'], ascending = False)
 
 display(d2)
 print('The best model is', d2.iloc[0, 0])
+
+# plot the graph of accuracy of algorithms
+
+plt.figure(figsize = (10, 6))
+plt.bar(d2['Model'], d2['Accuracy'], width = 0.5, color = 'green')
+plt.title('Accuracy of Algorithms')
+plt.ylabel('Accuracy')
+plt.ylim(0.65, 0.9)
+plt.show()
+
+# visualize the confusion matrix of the most accurate algorithm, 
+
+confusion_matrix_final = confusion_matrix(y_test, y_pred_lr)
+matrix_proportions = np.zeros((3, 3))
+for i in range(0,3):
+    matrix_proportions[i, :] = confusion_matrix_final[i, :] / float(confusion_matrix_final[i, :].sum())
+names = ['Hate', 'Offensive', 'Neither']
+confusion_df = pd.DataFrame(matrix_proportions, index = names, columns = names)
+plt.figure(figsize = (6, 6))
+sns.heatmap(confusion_df, annot = True, annot_kws = {"size": 20}, cmap = 'Greens', cbar = False, square = True,fmt = '.2f')
+plt.title('Confusion Matrix of Logistic Regression', fontsize = 16)
+plt.ylabel(r'True Value', fontsize = 14)
+plt.xlabel(r'Predicted Value', fontsize = 14)
+plt.tick_params(labelsize = 12)
 
 """
 

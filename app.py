@@ -5,9 +5,22 @@ import streamlit as st
 from project import clean_data, vectorizer, model_lr
 from PIL import Image
 
-# set the TBS logo on the top of the application
+# set up the page
 
-image = Image.open('/Users/djoum/Documents/TBS Project/gitProject/AI-and-Big-Data-project/tbs.png')
+st.set_page_config(
+        page_title = "Hate Speech Detection Application",
+        page_icon = "/Users/ching/Desktop/Class/Data Project Management/AI and Big Data Project/Project/tbs_icon.png",
+    )
+
+# define the style of UI with css file in html
+
+def local_css(file_name):
+    with open(file_name) as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html = True)
+
+local_css("/Users/ching/Desktop/Class/Data Project Management/AI and Big Data Project/Project/style.css")
+
+image = Image.open('/Users/ching/Desktop/Class/Data Project Management/AI and Big Data Project/Project/tbs.png')
 st.image(image)
 
 # set the appilcation's title
